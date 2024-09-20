@@ -1,0 +1,231 @@
+---
+title: "Creating informative maps Mini Project 1"
+author: "Rain Hartos"
+sidebar: false
+format:
+  html: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(sf)
+library(mdsr)  
+library(maps)
+library(cspp)
+library(htmltools)
+library(glue)
+library(maps)
+library(leaflet)
+```
+
+### Overview
+
+This mini projects aims to illustrate gun control trends in 48 states from the US in the year 2010.
+
+The variables we are interested in for this this project are `state`, `arms_pro`, and `w_guncontrol_registration_requir`. `state` is our explanatory variable and `arms_pro`, and `w_guncontrol_registration_requir` are our response variables. These variables are from the cspp R package, which is a compilation of more than 900 variables across 50 states from 1900-2016, which was compiled by the [The Correlates of State Policy Project](https://ippsr.msu.edu/public-policy/correlates-state-policy).
+
+The explanatory variable, `state`, is a categorical variable with each level being a state from one of the US states (excluding Alaska and Hawaii.)
+
+The first response variable, `arms_pro`, is a numerical variable that gives the percentage of Pro-arms public opinion by state. Pro-arms is favoring the right to own guns and opposing legislation restricting this right.
+
+The second response variable, `w_guncontrol_registration_requir`, categorizes if a state has registration requirement for guns. There are 3 levels, 0 = no; 1 = law applies to handguns only; 2 = law applies to all firearms, including rifles and shotguns.
+
+### Dataset Searching
+
+```{r}
+#| eval: false
+# Find variables based on a category
+demo_variables <- get_var_info(categories = "gun control")
+
+# Use these variables to get a full or subsetted version of the data
+cspp_data <- get_cspp_data(vars = demo_variables$variable, 
+                           years = seq(2000, 2012)) |>
+  select(state, year, w_guncontrol_registration_requir, arms_pro)
+
+```
+
+### Preparing the Dataset
+
+```{r}
+# Get info to draw US states for geom_polygon (connect the lat-long points)
+states_polygon <- as_tibble(map_data("state")) |>
+  select(region, group, order, lat, long)
+
+# Get info to draw US states for geom_sf and leaflet (simple features object 
+#   with multipolygon geometry column)
+states_sf <- read_sf("https://rstudio.github.io/leaflet/json/us-states.geojson") |>
+  select(name, geometry)
+
+#Use the cspp package for the other dataset
+demo_variables <- get_var_info(categories = "gun control")
+cspp_data <- get_cspp_data(vars = demo_variables$variable, 
+                           years = seq(2000, 2012)) |>
+  select(state, year, w_guncontrol_registration_requir, arms_pro)|>
+  filter(year == 2010) |>
+  mutate(w_guncontrol_registration_requir = as.factor(w_guncontrol_registration_requir),
+         across(arms_pro, round, 3))
+
+unique(cspp_data$state)
+
+```
+
+```{r}
+
+#Prepare data for merge
+states_polygon <- states_polygon |>
+  mutate(region = str_replace_all(region, " ", ""))
+
+states_sf <- states_sf |>
+  mutate(name = str_to_lower(name),
+         name = str_replace_all(name, " ", ""))
+
+cspp_data <- cspp_data |>
+  mutate(state = str_to_lower(str_replace_all(state, " ", "")))
+
+```
+
+```{r}
+#Merge the dataset
+
+# Merge with states_polygon (static)
+cspp_polygon <- states_polygon |>
+  left_join(cspp_data, by = c("region" = "state"))
+
+# Merge with states_sf (static or interactive)
+cspp_sf <- states_sf |>
+  left_join(cspp_data, by = c("name" = "state")) |>
+  filter(!(name %in% c("alaska", "hawaii"))) 
+
+```
+
+### Numeric variable (static plot):
+
+```{r}
+library(viridis)
+cspp_polygon |>
+  ggplot(mapping = aes(x = long, y = lat, group = group)) + 
+    geom_polygon(aes(fill = arms_pro), color = "black")+ 
+    labs(title = "Pro-Arms Percentage by State in 2010",
+         fill = "Pro-Arms Percentage",
+         caption = "Data Source: https://ippsr.msu.edu/public-policy/correlates-state-policy") +
+    coord_map() + 
+    theme_void() +  
+    scale_fill_viridis(option = "C", direction = -1) 
+
+cspp_polygon|>
+  slice_max(arms_pro)
+
+
+cspp_polygon|>
+  slice_min(arms_pro)
+```
+
+The choropleth map represents the percentage of pro-arms public opinion in 2010 across U.S. states. States are colored based on the percentage of residents supporting gun ownership rights. The explanatory variable is`state`, with each U.S. state (except Alaska and Hawaii) as a category. The response variable, `arms_pro`, is a percentage representing the pro-arms public opinion for each state. arms_pro ranges from around 25% to 35%, which are depicted using a color gradient. Darker colors represent higher percentages while lighter colors represent lower percentages. From the choropleth map, it can be seen that New York and California have the lowest percentages (lightest color) while South Dakota and Wyoming have the highest percentages (darkest color) or pro-arms public support.
+
+### Numeric variable (interactive plot):
+
+```{r}
+cspp_sf <- cspp_sf |>
+  mutate(labels = str_c(name, ": ", arms_pro, " Percent Pro Arms in 2010")) #Create labels
+
+labels <- lapply(cspp_sf$labels, HTML)
+
+#create the leaflet map
+leaflet(cspp_sf) |>
+  setView(-96, 37.8, 4) |> #set the intitial view of the map
+  addTiles() |>
+  addPolygons( #create the polygons that represent each of the states using the cspp_sf dataset
+    weight = 2,
+    opacity = 1,
+    color = ~ colorNumeric("YlOrRd", cspp_sf$arms_pro)(cspp_sf$arms_pro), #have the color correspond with the arms_pro percentages 
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlightOptions = highlightOptions( #Changes the styling of the highlighted states
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels, 
+    labelOptions = labelOptions( #changes the styling of the text and labels
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")) 
+
+```
+
+### Categorical variable (static plot):
+
+```{r}
+#table(cspp_polygon$w_guncontrol_registration_requir)
+
+cspp_polygon |>
+  mutate(w_guncontrol_registration_requir = recode(w_guncontrol_registration_requir,
+    `0` = "None",       
+    `1` = "Handguns Only",   
+    `2` = "All Firearms")) |>
+  ggplot(mapping = aes(x = long, y = lat, group = group)) + 
+    geom_polygon(aes(fill = w_guncontrol_registration_requir), color = "black") + 
+    labs(title = "State Gun Registration Laws in 2010",
+         fill = "Gun Registration Required",
+         caption = "Data Source: https://ippsr.msu.edu/public-policy/correlates-state-policy") +
+    coord_map() + 
+    theme_void() +  
+    scale_fill_manual(values = c("red", "yellow", "green")) 
+
+cspp_data|>
+  filter(year == 2010, w_guncontrol_registration_requir == 1)
+
+```
+
+The choropleth map represents U.S. state gun registration laws in 2010, with each state colored based on the level of gun registration required. The explanatory variable is `state`, with each U.S. state (except Alaska and Hawaii) as a category. The response variable is `w_guncontrol_registration_requir`, which represents the level of gun registration required in each state. There are three levels: no registration required ("None", colored in red), registration required for handguns only ("Handguns Only", colored in yellow), and registration required for all firearms, including rifles and shotguns ("All Firearms", colored in green). From the map, we can see that a majority of states are colored in red, meaning that they require no gun registration. There are a few that are colored green, which includes California, Connecticut, and Massachusetts, meaning all firearms require registration. Seven states are coded yellow, such as Alabama and New York, meaning that only handguns are required for registration in those states.
+
+### Categorical variable (interactive plot):
+
+```{r}
+cspp_sf <- cspp_sf |> #Recode the levels and set labels
+  mutate(w_guncontrol_registration_requir = recode(w_guncontrol_registration_requir,
+    `0` = "No",       
+    `1` = "Handguns Only",   
+    `2` = "All Firearms"),
+    labels = str_c(name,
+                   ": ",
+                   w_guncontrol_registration_requir,
+                   " Required Gun Registration")) |>
+  filter(!is.na(w_guncontrol_registration_requir)) #Remove NA from the legend
+
+labels <- lapply(cspp_sf$labels, HTML)
+
+factpal <- colorFactor(c(  "green","yellow", "red"), #match the colors from static plot
+                       levels(cspp_sf$w_guncontrol_registration_requir))
+
+#create the leaflet map
+leaflet(cspp_sf) |>
+  setView(-96, 37.8, 4) |> #set the intitial view of the map
+  addTiles() |>
+  addPolygons( #create the polygons that represent each of the states using the cspp_sf dataset
+    weight = 2,
+    opacity = 1,
+    color = "black",
+    fillColor = ~ factpal(cspp_sf$w_guncontrol_registration_requir),
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlightOptions = highlightOptions(  #Changes the styling of the highlighted states
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions( #changes the styling of the text and labels
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")) |>
+  addLegend(pal = factpal, values = ~cspp_sf$w_guncontrol_registration_requir, 
+            opacity = 0.7, title = NULL, position = "bottomright")
+```
