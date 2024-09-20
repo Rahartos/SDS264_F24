@@ -2,10 +2,19 @@
 title: "Creating informative maps Mini Project 1"
 author: "Rain Hartos"
 sidebar: false
-format:
-  html: default
-editor_options: 
-  chunk_output_type: console
+toc: true
+highlight-style: pygments
+format: 
+  html: 
+    code-fold: true
+    html-math-method: katex
+  pdf: 
+    geometry: 
+      - top=30mm
+      - left=20mm
+  docx: default
+execute:
+  warning: false
 ---
 
 ```{r}
@@ -70,7 +79,7 @@ cspp_data <- get_cspp_data(vars = demo_variables$variable,
   mutate(w_guncontrol_registration_requir = as.factor(w_guncontrol_registration_requir),
          across(arms_pro, round, 3))
 
-unique(cspp_data$state)
+#unique(cspp_data$state)
 
 ```
 
@@ -117,12 +126,6 @@ cspp_polygon |>
     theme_void() +  
     scale_fill_viridis(option = "C", direction = -1) 
 
-cspp_polygon|>
-  slice_max(arms_pro)
-
-
-cspp_polygon|>
-  slice_min(arms_pro)
 ```
 
 The choropleth map represents the percentage of pro-arms public opinion in 2010 across U.S. states. States are colored based on the percentage of residents supporting gun ownership rights. The explanatory variable is`state`, with each U.S. state (except Alaska and Hawaii) as a category. The response variable, `arms_pro`, is a percentage representing the pro-arms public opinion for each state. arms_pro ranges from around 25% to 35%, which are depicted using a color gradient. Darker colors represent higher percentages while lighter colors represent lower percentages. From the choropleth map, it can be seen that New York and California have the lowest percentages (lightest color) while South Dakota and Wyoming have the highest percentages (darkest color) or pro-arms public support.
@@ -177,9 +180,6 @@ cspp_polygon |>
     coord_map() + 
     theme_void() +  
     scale_fill_manual(values = c("red", "yellow", "green")) 
-
-cspp_data|>
-  filter(year == 2010, w_guncontrol_registration_requir == 1)
 
 ```
 
