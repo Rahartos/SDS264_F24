@@ -1,0 +1,321 @@
+---
+title: "R Tip of the Day"
+subtitle: "The `janitor` Package"
+author: "Rain Hartos"
+date: "October 2, 2024"
+format:
+  revealjs: 
+    slide-number: true
+    preview-links: auto
+    self-contained: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(gapminder)
+library(gganimate)
+library(janitor)
+```
+
+## Introduction to the `janitor` Package {auto-animate="true"}
+:::{.incremental}
+- A package for simplifying data cleaning
+- Works well with data frames and `tibbles`
+- **Why use it?** Makes life easier when coding in R by simplifying tedious data clean-up
+- We are going to focus on the functions `clean_names()`, `compare_df_cols()`, `get_dupes()`, and `tabyl()`
+
+:::
+
+## clean_names() {auto-animate="true"}
+
+:::{.incremental}
+``` r
+test_df <- as.data.frame(matrix(ncol = 7))
+names(test_df) <- c("firstName", "LAST NAME", "ábc@!*", "% Change",
+                    "VALUE", "VALUE", "")
+test_df |>
+  clean_names()
+```
+:::
+## clean_names() {auto-animate="true"}
+
+``` r
+test_df <- as.data.frame(matrix(ncol = 7))
+names(test_df) <- c("firstName", "LAST NAME", "ábc@!*", "% Change",
+                    "VALUE", "VALUE", "")
+test_df |>
+  clean_names()
+```
+
+```{r}
+library(tidyverse)
+library(janitor)
+
+test_df <- as.data.frame(matrix(ncol = 7))
+names(test_df) <- c("firstName", "LAST NAME", "ábc@!*", "% Change",
+                    "VALUE", "VALUE", "")
+```
+```{r}
+#| echo: fenced
+print(test_df)
+```
+
+## clean_names() {auto-animate="true"}
+
+``` r
+test_df <- as.data.frame(matrix(ncol = 7))
+names(test_df) <- c("firstName", "LAST NAME", "ábc@!*", "% Change",
+                    "VALUE", "VALUE", "")
+test_df |>
+  clean_names()
+```
+
+```{r}
+library(tidyverse)
+library(janitor)
+
+test_df <- as.data.frame(matrix(ncol = 7))
+names(test_df) <- c("firstName", "LAST NAME", "ábc@!*", "% Change",
+                    "VALUE", "VALUE", "")
+```
+```{r}
+#| echo: fenced
+print(test_df)
+```
+```{r}
+#| echo: fenced
+test_df |>
+  clean_names()
+```
+
+## clean_names() {auto-animate="true"}
+
+```{r}
+library(tidyverse)
+library(janitor)
+
+test_df <- as.data.frame(matrix(ncol = 7))
+names(test_df) <- c("firstName", "LAST NAME", "ábc@!*", "% Change",
+                    "VALUE", "VALUE", "")
+```
+```{r}
+#| echo: fenced
+print(test_df)
+```
+```{r}
+#| echo: fenced
+test_df |>
+  clean_names()
+```
+
+:::{.incremental}
+- Parses letter cases and separators to a consistent format.
+- Handles special characters and spaces
+- Appends numbers to duplicated names
+- Converts “%” to “percent” and “#” to “number”
+:::
+
+## compare_df_cols() {auto-animate="true"}
+
+```{.r code-line-numbers="3-6|9-13"}
+#| echo: fenced
+
+df1 <- data.frame(
+  id = c(1, 2),
+  name = c("Alice", "Bob"),
+  age = c("25", "30")
+)
+
+df2 <- data.frame(
+  identifier = c(1, 2),
+  full_name = c("Alice Smith", "Bob Brown"),
+  age = c(25, 30),
+  salary = c(50000, 60000)
+)
+```
+
+
+## compare_df_cols() {auto-animate="true"}
+
+```{r}
+df1 <- data.frame(
+  id = c(1, 2),
+  name = c("Alice", "Bob"),
+  age = c("25", "30")
+)
+
+df2 <- data.frame(
+  identifier = c(1, 2),
+  full_name = c("Alice Smith", "Bob Brown"),
+  age = c(25, 30),
+  salary = c(50000, 60000)
+)
+```
+
+```{r}
+#| echo: fenced
+compare_df_cols(df1, df2)
+```
+
+## compare_df_cols() {auto-animate="true"}
+```{r}
+df1 <- data.frame(
+  id = c(1, 2),
+  name = c("Alice", "Bob"),
+  age = c("25", "30")
+)
+
+df2 <- data.frame(
+  identifier = c(1, 2),
+  full_name = c("Alice Smith", "Bob Brown"),
+  age = c(25, 30),
+  salary = c(50000, 60000)
+)
+```
+```{r}
+#| echo: fenced
+compare_df_cols(df1, df2)
+```
+```{r}
+#| echo: fenced
+compare_df_cols(df1, df2, return = "mismatch")
+```
+Helps to identify mismatching datatypes with the same variable names.
+
+## compare_df_cols() {auto-animate="true"}
+```{r}
+df1 <- data.frame(
+  id = c(1, 2),
+  name = c("Alice", "Bob"),
+  age = c("25", "30")
+)
+
+df2 <- data.frame(
+  identifier = c(1, 2),
+  full_name = c("Alice Smith", "Bob Brown"),
+  age = c(25, 30),
+  salary = c(50000, 60000)
+)
+```
+
+```{r}
+#| echo: fenced
+compare_df_cols(df1, df2, return = "mismatch")
+```
+
+:::{.incremental}
+
+- Compares the columns of 2 or more data frames
+- Highlights differences in column names, types, and structures
+- Useful for troubleshooting issues in merging/joining datasets/dataframes
+:::
+
+## get_dupes() {auto-animate="true"}
+
+```{r}
+#| echo: fenced
+df3 <- data.frame(
+  name = c("Alice", "Bob", "Alice", "Charlie", "Bob"),
+  age = c(25, 30, 25, 35, 30),
+  city = c("New York", "Los Angeles", "New York", "Chicago", "Los Angeles")
+)
+```
+
+## get_dupes() {auto-animate="true"}
+
+```{r}
+df3 <- data.frame(
+  name = c("Alice", "Bob", "Alice", "Charlie", "Bob"),
+  age = c(25, 30, 25, 35, 30),
+  city = c("New York", "Los Angeles", "New York", "Chicago", "Los Angeles")
+)
+```
+
+```{r}
+#| echo: fenced
+duplicates <- get_dupes(df3, name)
+duplicates
+```
+
+:::{.incremental}
+
+- The get_dupes() function identifies duplicate rows based on specified columns.
+- It returns a data frame containing only the duplicated rows.
+- Useful for data cleaning and ensuring data integrity. 
+:::
+
+## tabyl() {auto-animate="true"}
+
+```{r}
+#| echo: fenced
+df3 <- data.frame(
+  name = c("Alice", "Bob", "Alice", "Charlie", "Bob"),
+  age = c(25, 30, 25, 35, 30),
+  city = c("New York", "Los Angeles", "New York", "Chicago", "Los Angeles")
+)
+```
+
+```{r}
+#| echo: fenced
+# Create a frequency table with base R table
+table(df3$city)
+```
+
+## tabyl() {auto-animate="true"}
+```{r}
+#| echo: fenced
+# Create a frequency table with base R table
+table(df3$city)
+```
+
+```{r}
+#| echo: fenced
+# Create a frequency table with tabyl for 1 var
+tabyl(df3, city)
+```
+
+## tabyl() {auto-animate="true"}
+```{r}
+#| echo: fenced
+# Create a frequency table with tabyl for 1 var
+tabyl(df3, city)
+```
+
+```{r}
+#| echo: fenced
+# Create a frequency table with tabyl for 2 var
+tabyl(df3, city, name)
+```
+
+## tabyl() {auto-animate="true"}
+
+```{r}
+#| echo: fenced
+# Create a frequency table with tabyl for 2 var
+tabyl(df3, city, name)
+```
+:::{.incremental}
+
+-  creates frequency tables for categorical variables.
+- It returns a data frame with counts and percentages.
+- It can be extended to create cross-tabulations for multiple variables. 
+:::
+
+::: footer
+Learn more: [tabyl() Vignette](https://sfirke.github.io/janitor/articles/tabyls.html)
+:::
+
+## Conclusion
+- The janitor package has many useful functions like `clean_names()`, `compare_df_cols()`, `get_dupes()`, and     `tabyl()`.
+- Save time doing mutates, pivots and joins!
+- Some other useful functions you may be interested in is `remove_empty()`, `get_one_to_one()`, and many more!.
+
+
+## Sources
+
+1. **`janitor` Package Documentation**  
+   [https://cran.r-project.org/web/packages/janitor/janitor.pdf](https://cran.r-project.org/web/packages/janitor/janitor.pdf)
+2. **Janitor Package Vignette**  
+   [https://cran.r-project.org/web/packages/janitor/vignettes/janitor.html](https://cran.r-project.org/web/packages/janitor/vignettes/janitor.html)
